@@ -1,46 +1,37 @@
 import throttle from 'lodash.throttle';
-const formEl = document.querySelector('.feedback-form');
-const LOCAL_STORAGE_KEY = 'feedback-form-state';
 
-let data = {};
+const STORAGE_KEY = 'feedback-form-state';
+const refs = {
+  form: document.querySelector('.feedback-form'),
+  textarea: document.querySelector('.feedback-form textarea'),
+  input: document.querySelector('input'),
+};
+const formData = {};
 
-loadForm();
+populateTextarea();
 
-formEl.addEventListener('input', _throttle(onSaveFormInput, 500));
+refs.form.addEventListener('input', throttle(onTextareaInput, 500));
 
-formEl.addEventListener('submit', onFormSubmit);
+refs.form.addEventListener('submit', e => {
+  e.preventDefault();
+  e.currentTarget.reset();
+  const objData = JSON.parse(localStorage.getItem(STORAGE_KEY));
+  localStorage.removeItem(STORAGE_KEY);
+});
 
-function onSaveFormInput(event) {
-  data = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || {};
-
-  data[event.target.name] = event.target.value;
-
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+function onTextareaInput(e) {
+  formData[e.target.name] = e.target.value;
+  const stringifiedData = JSON.stringify(formData);
+  localStorage.setItem(STORAGE_KEY, stringifiedData);
 }
 
-function onFormSubmit(event) {
-  event.preventDefault();
-  if (!event.target.email.value || !event.target.message.value) {
-    alert('Enter all data');
+function populateTextarea() {
+  const savedMessage = JSON.parse(localStorage.getItem(STORAGE_KEY));
+
+  if (savedMessage === null) {
+    //console.log(savedMessage);
     return;
   }
-
-  event.target.reset();
-  console.log(data);
-  localStorage.removeItem(LOCAL_STORAGE_KEY);
-}
-
-function loadForm() {
-  try {
-    let formLoad = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY));
-    if (!formLoad) {
-      return;
-    }
-
-    data = formLoad;
-    formEl.email.value = data.email || '';
-    formEl.message.value = data.message || '';
-  } catch (error) {
-    console.error('Error.message ', error.message);
-  }
+  refs.textarea.value = savedMessage['message'] || '';
+  refs.input.value = savedMessage['email'] || '';
 }
